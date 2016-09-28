@@ -45,7 +45,9 @@ public class CrogampCLI implements ICrogampInterface {
 	private void registerCommands() {
 		reg.registerCommand("license", "Displays licensing info.", this::cmdLicense);
 		reg.registerCommand("bye", "Quits the application.", this::cmdExit);
-		reg.registerCommand("test", "Test command. Do not use, may cause unexpected behavior and/or spontaneous combustion of your computer", s -> 237283);
+		reg.registerCommand("test",
+				"Test command. Do not use, may cause unexpected behavior and/or spontaneous combustion of your computer",
+				s -> 237283);
 	}
 
 	private int cmdLicense(String[] args) {
