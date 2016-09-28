@@ -1,5 +1,6 @@
 package com.github.mrebhan.crogamp.cli;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -25,7 +26,7 @@ public class CommandRegistry {
 	}
 
 	public void registerListCommands(String name) {
-		registerCommand(name, this::listCmds);
+		registerCommand(name, "Lists all available commands.", this::listCmds);
 	}
 	
 	public void registerCommand(String name, Function<String[], Integer> function) {
@@ -46,6 +47,7 @@ public class CommandRegistry {
 		for (String string : commands.keySet()) {
 			i = Math.max(i, string.length() + 1);
 		}
+		ArrayList<String> strings = new ArrayList<>();
 		for (String string : commands.keySet()) {
 			String out = string;
 			while (out.length() < i) {
@@ -55,8 +57,10 @@ public class CommandRegistry {
 			if (descriptions.containsKey(string)) {
 				out += descriptions.get(string);
 			}
-			System.out.println(out);
+			strings.add(out);
 		}
+		strings.sort(null);
+		strings.forEach(s -> System.out.println(s));
 		return 0;
 	}
 	
