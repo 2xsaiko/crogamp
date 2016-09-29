@@ -11,6 +11,7 @@ public abstract class PropertyContainer {
 
 	public PropertyContainer() {
 		properties = new HashMap<>();
+		setDefaults();
 	}
 	
 	public void serialize(IOStream stream) {
@@ -50,7 +51,7 @@ public abstract class PropertyContainer {
 		return null;
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "deprecation" })
 	private <T> void serializeProperty(IOStream stream, Property<T> prop, Object v) {
 		stream.putString(prop.getName());
 		IOStream tempstream = new IOStream(true);

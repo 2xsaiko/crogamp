@@ -1,6 +1,5 @@
 package com.github.mrebhan.crogamp.cli;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -9,10 +8,12 @@ public class CommandRegistry {
 
 	private Map<String, Function<String[], Integer>> commands;
 	private Map<String, String> descriptions;
+	private Map<String, String> syntax;
 
 	public CommandRegistry() {
 		commands = new HashMap<>();
 		descriptions = new HashMap<>();
+		syntax = new HashMap<>();
 	}
 
 	public int execute(String[] command) {
@@ -28,13 +29,13 @@ public class CommandRegistry {
 	public void registerListCommands(String name) {
 		registerCommand(name, "Lists all available commands.", this::listCmds);
 	}
-	
+
 	public void registerCommand(String name, Function<String[], Integer> function) {
-		commands.put(name, function);
+		this.commands.put(name, function);
 	}
-	
+
 	private void addDescriptionText(String name, String description) {
-		descriptions.put(name, description);
+		this.descriptions.put(name, description);
 	}
 
 	public void registerCommand(String name, String description, Function<String[], Integer> function) {
@@ -42,28 +43,22 @@ public class CommandRegistry {
 		addDescriptionText(name, description);
 	}
 
+	private void addSyntaxText(String name, String syntax) {
+		this.syntax.put(name, syntax);
+	}
+
+	public void registerCommand(String name, String description, String syntax, Function<String[], Integer> function) {
+		registerCommand(name, description, function);
+		addSyntaxText(name, syntax);
+	}
+
 	private int listCmds(String[] in) {
-		int i = 2;
-		for (String string : commands.keySet()) {
-			i = Math.max(i, string.length() + 1);
-		}
-		ArrayList<String> strings = new ArrayList<>();
-		for (String string : commands.keySet()) {
-			String out = string;
-			while (out.length() < i) {
-				out += ' ';
-			}
-			out += "| ";
-			if (descriptions.containsKey(string)) {
-				out += descriptions.get(string);
-			}
-			strings.add(out);
-		}
-		strings.sort(null);
-		strings.forEach(s -> System.out.println(s));
+		TableList tl = new TableList(3, true, "Command", "Description", "Syntax");
+		commands.keySet().forEach(c -> tl.addRow(c, descriptions.get(c), syntax.get(c)));
+		tl.print();
 		return 0;
 	}
-	
+
 	private static String[] giveMeDaStuff(String[] commandline) {
 		String[] arguments = new String[commandline.length - 1];
 		System.arraycopy(commandline, 1, arguments, 0, arguments.length);

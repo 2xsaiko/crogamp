@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
+import com.github.mrebhan.crogamp.cli.CommandRegistry;
 import com.github.mrebhan.crogamp.settings.Settings;
 
 import de.marco_rebhan.encodelib.IOStream;
@@ -35,6 +36,24 @@ public class GameLibrary {
 
 		settings = new Settings();
 		settings.deserialize(stream);
+	}
+
+	public static void registerCommands(CommandRegistry reg) {
+		reg.registerCommand("gl", "Lists all currently added games", GameLibrary::listGames);
+		reg.registerCommand("gs", "Selects the specified game.", "<id>", GameLibrary::selectGame);
+		reg.registerCommand("ga", "Adds the specified game.", "<id> <description> <path>", GameLibrary::addGame);
+	}
+
+	private static int listGames(String[] args) {
+		return 0;
+	}
+
+	private static int selectGame(String[] args) {
+		return 0;
+	}
+
+	private static int addGame(String[] args) {
+		return 0;
 	}
 
 	private GameLibrary() {
