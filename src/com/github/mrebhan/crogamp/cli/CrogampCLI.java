@@ -3,9 +3,15 @@ package com.github.mrebhan.crogamp.cli;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
 
 import com.github.mrebhan.crogamp.Crogamp;
 import com.github.mrebhan.crogamp.ICrogampInterface;
+import com.github.mrebhan.crogamp.gm.GameLibrary;
+import com.github.mrebhan.crogamp.settings.Settings;
 
 public class CrogampCLI implements ICrogampInterface {
 
@@ -21,9 +27,11 @@ public class CrogampCLI implements ICrogampInterface {
 
 	@Override
 	public int start(String[] args) {
-		System.out.printf("Crogamp %s  Copyright (C) 2016  Marco Rebhan%nThis program comes "
-				+ "with ABSOLUTELY NO WARRANTY; for details type `license'.%nType `help' for"
-				+ " a list of commands.%nType `bye' to exit.%n%n", Crogamp.VERSION);
+		System.out.printf(
+				"Crogamp %s  Copyright (C) 2016  Marco Rebhan%nThis program comes "
+						+ "with ABSOLUTELY NO WARRANTY; for details type `license'"
+						+ ".%nLast started: %s%nType `help' for a list of commands.%nType `bye' to exit.%n%n",
+				Crogamp.VERSION, utimeToString(GameLibrary.getSettings().getValue(Settings.LAST_START_TIME)));
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 		try {
 			int lastSC = 0;
@@ -45,9 +53,17 @@ public class CrogampCLI implements ICrogampInterface {
 	private void registerCommands() {
 		reg.registerCommand("license", "Displays licensing info.", this::cmdLicense);
 		reg.registerCommand("bye", "Quits the application.", this::cmdExit);
-		reg.registerCommand("test",
+		reg.registerCommand("fukboi",
 				"Test command. Do not use, may cause unexpected behavior and/or spontaneous combustion of your computer",
-				s -> 237283);
+				s -> {
+					for (int i = 0; i < 10; i++) {
+						for (int j = 0; j < 40; j++) {
+							System.out.print("LO");
+						}
+						System.out.println("L");
+					}
+					return 0x50;
+				});
 	}
 
 	private int cmdLicense(String[] args) {
@@ -66,8 +82,16 @@ public class CrogampCLI implements ICrogampInterface {
 
 	private int cmdExit(String[] args) {
 		running = false;
+		GameLibrary.getSettings().saveSettings();
 		System.out.println("Goodbye!");
 		return 0;
+	}
+
+	private static String utimeToString(long utime) {
+		Date date = new Date(utime);
+		DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		format.setTimeZone(TimeZone.getDefault());
+		return format.format(date);
 	}
 
 }
