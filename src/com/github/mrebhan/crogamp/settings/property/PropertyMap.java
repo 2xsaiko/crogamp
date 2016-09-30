@@ -23,7 +23,9 @@ public abstract class PropertyMap<V> extends Property<Map<String, V>> {
 		int len = stream.getInt();
 		for (int i = 0; i < len; i++) {
 			Entry<String, V> e = deserializePart(stream);
-			map.put(e.getKey(), e.getValue());
+			if (e != null) {
+				map.put(e.getKey(), e.getValue());
+			}
 		}
 		return map;
 	}

@@ -4,6 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import com.github.mrebhan.crogamp.gm.GameLibrary;
+import com.github.mrebhan.crogamp.settings.Settings;
+
 public class CommandRegistry {
 
 	private Map<String, Function<String[], Integer>> commands;
@@ -27,7 +30,7 @@ public class CommandRegistry {
 	}
 
 	public void registerListCommands(String name) {
-		registerCommand(name, "Lists all available commands.", this::listCmds);
+		registerCommand(name, "Lists all available commands.", "[pattern]", this::listCmds);
 	}
 
 	public void registerCommand(String name, Function<String[], Integer> function) {
@@ -53,7 +56,11 @@ public class CommandRegistry {
 	}
 
 	private int listCmds(String[] in) {
-		TableList tl = new TableList(3, true, "Command", "Description", "Syntax");
+		TableList tl = new TableList(3, "Command", "Description", "Syntax").sortBy(0).withUnicode(GameLibrary.getSettings().getValue(Settings.UNICODE));
+		if (in.length > 0) {
+			String s = String.join(" ", in).replace("?", ".?").replace("*", ".*?");
+			tl.filterBy(0, s);
+		}
 		commands.keySet().forEach(c -> tl.addRow(c, descriptions.get(c), syntax.get(c)));
 		tl.print();
 		return 0;

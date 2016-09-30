@@ -14,8 +14,4 @@ public class PropertyString extends Property<String> {
 		return stream.getString();
 	}
 
-	public static Property<String> createProperty(String name) {
-		return new PropertyString().withName(name);
-	}
-
 }

@@ -13,9 +13,5 @@ public class PropertyLong extends Property<Long> {
 	public Long deserialize(IOStream stream) {
 		return stream.getLong();
 	}
-
-	public static Property<Long> createProperty(String name) {
-		return new PropertyLong().withName(name);
-	}
 	
 }

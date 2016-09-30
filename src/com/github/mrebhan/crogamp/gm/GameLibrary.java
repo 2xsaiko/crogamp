@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 import com.github.mrebhan.crogamp.cli.CommandRegistry;
+import com.github.mrebhan.crogamp.cli.TableList;
 import com.github.mrebhan.crogamp.settings.Settings;
 
 import de.marco_rebhan.encodelib.IOStream;
@@ -45,6 +46,9 @@ public class GameLibrary {
 	}
 
 	private static int listGames(String[] args) {
+		TableList tl = new TableList(2, "Game ID", "Full Name").sortBy(1);
+		
+		tl.print();
 		return 0;
 	}
 

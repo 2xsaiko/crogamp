@@ -13,7 +13,7 @@ public abstract class PropertyContainer {
 		properties = new HashMap<>();
 		setDefaults();
 	}
-	
+
 	public void serialize(IOStream stream) {
 		stream.putInt(properties.size());
 		properties.forEach((p, v) -> serializeProperty(stream, p, v));
