@@ -12,7 +12,7 @@ public class PropertyMulti<T extends PropertyContainer> extends PropertyMap<T> {
 	public void serializePart(IOStream stream, String s, T v) {
 		stream.putString(s);
 		stream.putString(v.getClass().getName());
-		IOStream tempstream = new IOStream();
+		IOStream tempstream = new IOStream(true);
 		v.serialize(tempstream);
 		byte[] data = tempstream.getBytes();
 		stream.putInt(data.length);

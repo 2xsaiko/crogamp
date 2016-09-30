@@ -3,15 +3,11 @@ package com.github.mrebhan.crogamp.cli;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.TimeZone;
 
 import com.github.mrebhan.crogamp.Crogamp;
 import com.github.mrebhan.crogamp.ICrogampInterface;
 import com.github.mrebhan.crogamp.gm.GameLibrary;
-import com.github.mrebhan.crogamp.settings.Settings;
+import com.github.mrebhan.crogamp.gm.GameSettings;
 
 public class CrogampCLI implements ICrogampInterface {
 
@@ -27,18 +23,18 @@ public class CrogampCLI implements ICrogampInterface {
 
 	@Override
 	public int start(String[] args) {
-		System.out.printf(
-				"Crogamp %s  Copyright (C) 2016  Marco Rebhan%nThis program comes "
-						+ "with ABSOLUTELY NO WARRANTY; for details type `license'"
-						+ ".%nType `help' for a list of commands.%nType `bye' to exit.%n%n",
-				Crogamp.VERSION);
+		System.out.printf("Crogamp %s  Copyright (C) 2016  Marco Rebhan%nThis program comes "
+				+ "with ABSOLUTELY NO WARRANTY; for details type `license'"
+				+ ".%nType `help' for a list of commands.%nType `bye' to exit.%n%n", Crogamp.VERSION);
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 		try {
 			int lastSC = 0;
 			while (running) {
 				String sc = Integer.toHexString(lastSC & 0xFF);
 				sc = (sc.length() < 2 ? "0" + sc : sc).toUpperCase();
-				System.out.printf("%s > ", sc);
+				String csg = GameLibrary.getSelectedGame() == null ? "none"
+						: GameLibrary.getSelectedGame().getValue(GameSettings.ID);
+				System.out.printf("[%s] %s > ", csg, sc);
 				String[] stuffs = CommandUtil.split(reader.readLine());
 				if (stuffs.length > 0) {
 					lastSC = reg.execute(stuffs);
@@ -53,17 +49,15 @@ public class CrogampCLI implements ICrogampInterface {
 	private void registerCommands() {
 		reg.registerCommand("license", "Displays licensing info.", this::cmdLicense);
 		reg.registerCommand("bye", "Quits the application.", this::cmdExit);
-		reg.registerCommand("top kek",
-				"Test command. Do not use, may cause death and/or destruction",
-				s -> {
-					for (int i = 0; i < 10; i++) {
-						for (int j = 0; j < 40; j++) {
-							System.out.print("LO");
-						}
-						System.out.println("L");
-					}
-					return 0x50;
-				});
+		reg.registerCommand("top kek", "Test command. Do not use, may cause death and/or destruction", s -> {
+			for (int i = 0; i < 10; i++) {
+				for (int j = 0; j < 40; j++) {
+					System.out.print("LO");
+				}
+				System.out.println("L");
+			}
+			return 0x50;
+		});
 		GameLibrary.registerCommands(reg);
 		GameLibrary.getSettings().registerCommands(reg);
 	}
