@@ -42,7 +42,7 @@ public abstract class PropertySet<E> extends Property<Set<E>> {
 			public String deserializePart(IOStream stream) {
 				return stream.getString();
 			}
-		};
+		}.withName(name);
 	}
 
 }

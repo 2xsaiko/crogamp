@@ -24,7 +24,7 @@ public class Settings extends PropertyContainer {
 	public static final File BACKUP_FILE = new File("settings_backup");
 
 	public static final Property<Map<String, GameSettings>> GAMES = new PropertyMulti<GameSettings>().withName("games");
-	public static final Property<Map<String, String>> GAME_PATH = PropertyMap.createProperty("game_path");
+	public static final Property<Map<String, String>> GAME_PATH = PropertyMap.createPropertyString("game_path");
 	public static final Property<Boolean> UNICODE = new PropertyBoolean().withName("ucode");
 
 	@Override

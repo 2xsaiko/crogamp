@@ -53,6 +53,9 @@ public abstract class PropertyContainer {
 
 	@SuppressWarnings({ "unchecked", "deprecation" })
 	private <T> void serializeProperty(IOStream stream, Property<T> prop, Object v) {
+		if (prop.getName() == null) {
+			System.out.println("FUK U");
+		}
 		stream.putString(prop.getName());
 		IOStream tempstream = new IOStream(true);
 		prop.serialize(tempstream, (T) v);

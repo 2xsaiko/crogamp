@@ -32,7 +32,7 @@ public abstract class PropertyMap<V> extends Property<Map<String, V>> {
 
 	public abstract Entry<String, V> deserializePart(IOStream stream);
 
-	public static Property<Map<String, String>> createProperty(String name) {
+	public static Property<Map<String, String>> createPropertyString(String name) {
 		return new PropertyMap<String>() {
 
 			@Override
@@ -47,6 +47,31 @@ public abstract class PropertyMap<V> extends Property<Map<String, V>> {
 				String s = stream.getString();
 				String v = stream.getString();
 				return new AbstractMap.SimpleEntry(s, v);
+			}
+
+		}.withName(name);
+	}
+
+	public static Property<Map<String, byte[]>> createPropertyByteArray(String name) {
+		return new PropertyMap<byte[]>() {
+
+			@Override
+			public void serializePart(IOStream stream, String s, byte[] v) {
+				stream.putString(s);
+				stream.putInt(v.length);
+				stream.putRawByte(v);
+			}
+
+			@SuppressWarnings({ "rawtypes", "unchecked" })
+			@Override
+			public Entry<String, byte[]> deserializePart(IOStream stream) {
+				String s = stream.getString();
+				int length = stream.getInt();
+				byte[] b = new byte[length];
+				for (int i = 0; i < b.length; i++) {
+					b[i] = stream.getByte();
+				}
+				return new AbstractMap.SimpleEntry(s, b);
 			}
 
 		}.withName(name);

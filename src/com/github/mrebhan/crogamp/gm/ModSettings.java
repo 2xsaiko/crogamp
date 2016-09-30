@@ -15,7 +15,7 @@ import com.github.mrebhan.crogamp.settings.property.PropertyString;
 
 public class ModSettings extends PropertyContainer {
 
-	public static final Property<Map<String, String>> FILES = PropertyMap.createProperty("f");
+	public static final Property<Map<String, byte[]>> FILES = PropertyMap.createPropertyByteArray("f");
 	public static final Property<Set<String>> DIRS = PropertySet.createProperty("d");
 	public static final Property<Integer> PRIO = new PropertyInt().withName("p");
 	public static final Property<String> ID = new PropertyString().withName("i");
