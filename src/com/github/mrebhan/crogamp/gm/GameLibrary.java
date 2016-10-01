@@ -101,9 +101,9 @@ public class GameLibrary {
 		reg.registerCommand("ga", "Adds the specified game.", "<id> <description> <path>", GameLibrary::addGame);
 		reg.registerCommand("gl", "Lists all currently added games", "[pattern]", GameLibrary::listGames);
 		reg.registerCommand("gs", "Selects the specified game.", "<id>", GameLibrary::selectGame);
-		reg.registerCommand("gr", "Rebuilds the files of the currently active game.", GameLibrary::rebuildGameFiles);
+		reg.registerCommand("gr", "Rebuilds the files of the currently active game.", "[base-only]", GameLibrary::rebuildGameFiles);
 		reg.registerCommand("ma", "Adds a mod to the currently active game.", "<id> <file>", GameLibrary::addMod);
-		reg.registerCommand("ml", "Lists all mods for the currently active game.", "[pattern]", GameLibrary::listMods);
+		reg.registerCommand("ml", "Lists all mods for the currently active game.", GameLibrary::listMods);
 		reg.registerCommand("mm", "Moves the specified mod to the specified position in the priority list.",
 				"<id> <position>", GameLibrary::moveMod);
 		reg.registerCommand("me", "Toggles if the selected mod is active.", "<id>", GameLibrary::toggleMod);
@@ -368,6 +368,8 @@ public class GameLibrary {
 
 	private static int rebuildGameFiles(String[] args) {
 		if (a()) {
+			boolean baseonly = args.length == 1 && "base-only".equals(args[0]);
+			
 			// 1. Remove files
 			HashSet<File> s = new HashSet<>();
 			File dir = new File(currentGame.getValue(GameSettings.PATH));
@@ -384,7 +386,7 @@ public class GameLibrary {
 			// 2. Link files, sorted by priority
 			ArrayList<ModSettings> mods = new ArrayList<>();
 			currentGame.getValue(GameSettings.MODS).forEach((id, ms) -> mods.add(ms));
-			mods.removeIf(m -> !m.getValue(ModSettings.ENABLED));
+			mods.removeIf(m -> !m.getValue(ModSettings.ENABLED) || (baseonly && !m.getValue(ModSettings.BASEGAME)));
 			mods.sort((o1, o2) -> o1.getValue(ModSettings.PRIO) > o2.getValue(ModSettings.PRIO) ? 1 : -1);
 			mods.forEach(m -> m.getValue(ModSettings.DIRS).forEach(d -> new File(dir, d).mkdirs()));
 			mods.forEach(m -> {
