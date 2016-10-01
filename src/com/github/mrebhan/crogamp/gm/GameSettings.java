@@ -1,6 +1,7 @@
 package com.github.mrebhan.crogamp.gm;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,7 +33,11 @@ public class GameSettings extends PropertyContainer {
 	}
 
 	public void rebuildPriorities() {
-		
+		ArrayList<ModSettings> mods = new ArrayList<>();
+		getValue(GameSettings.MODS).forEach((id, ms) -> mods.add(ms));
+		mods.sort((o1, o2) -> o1.getValue(ModSettings.PRIO) > o2.getValue(ModSettings.PRIO) ? 1 : -1);
+		int[] i = { -1 }; // because fuck you java
+		mods.forEach(ms -> ms.setValue(ModSettings.PRIO, i[0]++));
 	}
 
 }

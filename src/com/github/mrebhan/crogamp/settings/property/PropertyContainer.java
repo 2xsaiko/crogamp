@@ -33,7 +33,7 @@ public abstract class PropertyContainer {
 				}
 			}
 			if (!flag) {
-				System.out.printf("Warning: Property %s couldn't be found. Skipping!%n", pname);
+				System.out.printf("Warning: Property %s couldn't be found for class %s. Skipping!%n", pname, getClass().getSimpleName());
 				stream.skip(proplength);
 			}
 		}

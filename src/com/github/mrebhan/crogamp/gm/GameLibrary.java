@@ -32,7 +32,7 @@ public class GameLibrary {
 	private static boolean indexFiles() {
 		File dir = new File(currentGame.getValue(GameSettings.PATH));
 		File db = new File(dir, ".crogamp");
-		
+
 		db.mkdirs();
 		if (dir.isDirectory()) {
 			ModSettings ms = new ModSettings();
@@ -105,7 +105,7 @@ public class GameLibrary {
 		reg.registerCommand("ma", "Adds a mod to the currently active game.", "<id> <file>", GameLibrary::addMod);
 		reg.registerCommand("ml", "Lists all mods for the currently active game.", "[pattern]", GameLibrary::listMods);
 		reg.registerCommand("mm", "Moves the specified mod to the specified position in the priority list.",
-				"<id> <position>", in -> -10);
+				"<id> <position>", GameLibrary::moveMod);
 		reg.registerCommand("me", "Toggles if the selected mod is active.", "<id>", in -> -10);
 		reg.registerCommand("md", "Deletes the specified mod and removes all associated files.", "<id>", in -> -10);
 	}
@@ -125,7 +125,7 @@ public class GameLibrary {
 
 	private static int listMods(String[] args) {
 		if (a()) {
-			TableList tl = new TableList(3, "Position", "Mod ID", "Enabled").sortBy(1)
+			TableList tl = new TableList(3, "Position", "Mod ID", "Enabled").sortBy(0)
 					.withUnicode(settings.getValue(Settings.UNICODE));
 			currentGame.getValue(GameSettings.MODS)
 					.forEach((name, ms) -> tl.addRow(Integer.toString(ms.getValue(ModSettings.PRIO)), name,
@@ -206,6 +206,45 @@ public class GameLibrary {
 				return 0;
 			}
 			return -4;
+		} else {
+			return -2;
+		}
+	}
+
+	private static int moveMod(String[] args) {
+		if (a() && args.length == 2) {
+			currentGame.rebuildPriorities();
+			String modid = args[0];
+			int newprio;
+			try {
+				newprio = Math.max(0, Integer.parseInt(args[1]));
+			} catch (NumberFormatException e) {
+				System.out.printf("%s is not a number.%n", args[1]);
+				return -4;
+			}
+			if (!currentGame.getValue(GameSettings.MODS).containsKey(modid)) {
+				System.out.printf("Mod %s not registered.%n", modid);
+				return -3;
+			}
+			ModSettings ms = currentGame.getValue(GameSettings.MODS).get(modid);
+			int curprio = ms.getValue(ModSettings.PRIO);
+			int dir = (int) Math.signum(newprio - curprio); // -1 for up, 0 for
+															// no action, 1 for
+															// down
+			if (dir == 0) {
+				return 0;
+			}
+			ArrayList<ModSettings> tm = new ArrayList<>();
+			currentGame.getValue(GameSettings.MODS).forEach((id, settings) -> {
+				int p = settings.getValue(ModSettings.PRIO);
+				if (p <= Math.max(curprio, newprio) && p >= Math.min(curprio, newprio) && settings != ms) {
+					tm.add(settings);
+				}
+			});
+			tm.forEach(settings -> settings.setValue(ModSettings.PRIO, settings.getValue(ModSettings.PRIO) - dir));
+			ms.setValue(ModSettings.PRIO, newprio);
+			currentGame.rebuildPriorities();
+			return 0;
 		} else {
 			return -2;
 		}
