@@ -31,4 +31,8 @@ public class GameSettings extends PropertyContainer {
 		return new File(getValue(PATH), "/.crogamp/" + sha1s.substring(0, 2) + "/" + sha1s);
 	}
 
+	public void rebuildPriorities() {
+		
+	}
+
 }
