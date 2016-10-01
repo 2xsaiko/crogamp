@@ -17,6 +17,8 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import javax.xml.bind.annotation.adapters.HexBinaryAdapter;
+
 import com.github.mrebhan.crogamp.cli.CommandRegistry;
 import com.github.mrebhan.crogamp.cli.TableList;
 import com.github.mrebhan.crogamp.settings.Settings;
@@ -107,7 +109,8 @@ public class GameLibrary {
 		reg.registerCommand("mm", "Moves the specified mod to the specified position in the priority list.",
 				"<id> <position>", GameLibrary::moveMod);
 		reg.registerCommand("me", "Toggles if the selected mod is active.", "<id>", GameLibrary::toggleMod);
-		reg.registerCommand("md", "Deletes the specified mod and removes all associated files.", "<id>", in -> -10);
+		reg.registerCommand("md", "Deletes the specified mod and removes all associated files.", "<id>",
+				GameLibrary::deleteMod);
 	}
 
 	private static int listGames(String[] args) {
@@ -184,7 +187,8 @@ public class GameLibrary {
 		if (a() && args.length == 2) {
 			String id = args[0];
 			String path = args[1];
-			if (currentGame.getValue(GameSettings.MODS).containsKey(id)) {
+			Map<String, ModSettings> modList = currentGame.getValue(GameSettings.MODS);
+			if (modList.containsKey(id)) {
 				System.err.printf("Another mod with id %s already exists!%nRemove it first if this is an update!%n",
 						id);
 				return -3;
@@ -200,7 +204,7 @@ public class GameLibrary {
 			}
 			boolean success = tryZip(ms, file);
 			if (success) {
-				currentGame.getValue(GameSettings.MODS).put(id, ms);
+				modList.put(id, ms);
 				currentGame.rebuildPriorities();
 				b();
 				return 0;
@@ -222,11 +226,12 @@ public class GameLibrary {
 				System.out.printf("%s is not a number.%n", args[1]);
 				return -4;
 			}
-			if (!currentGame.getValue(GameSettings.MODS).containsKey(modid)) {
+			Map<String, ModSettings> modList = currentGame.getValue(GameSettings.MODS);
+			if (!modList.containsKey(modid)) {
 				System.out.printf("Mod %s not registered.%n", modid);
 				return -3;
 			}
-			ModSettings ms = currentGame.getValue(GameSettings.MODS).get(modid);
+			ModSettings ms = modList.get(modid);
 			int curprio = ms.getValue(ModSettings.PRIO);
 			int dir = (int) Math.signum(newprio - curprio); // -1 for up, 0 for
 															// no action, 1 for
@@ -235,7 +240,7 @@ public class GameLibrary {
 				return 0;
 			}
 			ArrayList<ModSettings> tm = new ArrayList<>();
-			currentGame.getValue(GameSettings.MODS).forEach((id, settings) -> {
+			modList.forEach((id, settings) -> {
 				int p = settings.getValue(ModSettings.PRIO);
 				if (p <= Math.max(curprio, newprio) && p >= Math.min(curprio, newprio) && settings != ms) {
 					tm.add(settings);
@@ -250,15 +255,16 @@ public class GameLibrary {
 			return -2;
 		}
 	}
-	
+
 	private static int toggleMod(String[] args) {
 		if (a() && args.length == 1) {
 			String modid = args[0];
-			if (!currentGame.getValue(GameSettings.MODS).containsKey(modid)) {
+			Map<String, ModSettings> modList = currentGame.getValue(GameSettings.MODS);
+			if (!modList.containsKey(modid)) {
 				System.out.printf("Mod %s not registered.%n", modid);
 				return -3;
 			}
-			ModSettings ms = currentGame.getValue(GameSettings.MODS).get(modid);
+			ModSettings ms = modList.get(modid);
 			if (ms.getValue(ModSettings.BASEGAME)) {
 				System.out.println("Cannot disable the base game files!");
 				return -4;
@@ -273,13 +279,54 @@ public class GameLibrary {
 		}
 	}
 
+	private static int deleteMod(String[] args) {
+		if (a() && args.length == 1) {
+			String modid = args[0];
+			Map<String, ModSettings> modList = currentGame.getValue(GameSettings.MODS);
+			if (!modList.containsKey(modid)) {
+				System.out.printf("Mod %s not registered.%n", modid);
+				return -3;
+			}
+			ModSettings ms = modList.get(modid);
+			if (ms.getValue(ModSettings.BASEGAME)) {
+				System.out.println("Cannot delete the base game files!");
+				return -4;
+			}
+			ms.getValue(ModSettings.FILES).forEach((name, sha1) -> {
+				boolean isUsed = false;
+				outerLoop: for (ModSettings mod : currentGame.getValue(GameSettings.MODS).values()) {
+					if (mod == ms)
+						continue;
+					for (byte[] fm : mod.getValue(ModSettings.FILES).values()) {
+						// System.out.println(new HexBinaryAdapter().marshal(fm)
+						// + " = " + new HexBinaryAdapter().marshal(sha1));
+						if (Arrays.equals(fm, sha1)) {
+							isUsed = true;
+							break outerLoop;
+						}
+					}
+				}
+				if (!isUsed) {
+					currentGame.resource(sha1).delete();
+				}
+			});
+			modList.remove(modid);
+			b();
+			return 0;
+		} else {
+			return -2;
+		}
+	}
+
 	private static boolean tryZip(ModSettings ms, File file) {
 		try (ZipInputStream is = new ZipInputStream(new FileInputStream(file))) {
 			ZipEntry ze;
+			int f = 0;
+			int d = 0;
 			while ((ze = is.getNextEntry()) != null) {
-				System.out.printf(" > %s%n", ze.getName());
 				if (ze.isDirectory() || ze.getSize() == 0) {
 					ms.getValue(ModSettings.DIRS).add(ze.getName());
+					d++;
 				} else {
 					MessageDigest md = MessageDigest.getInstance("SHA-1");
 					File tempfile = new File(".tempfile-" + Long.toHexString(System.nanoTime()));
@@ -307,8 +354,10 @@ public class GameLibrary {
 					}
 					Files.delete(tempfile.toPath());
 					ms.getValue(ModSettings.FILES).put('/' + ze.getName(), sha1);
+					f++;
 				}
 			}
+			System.out.printf("%s files, %s directories%n", f, d);
 			return true;
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
