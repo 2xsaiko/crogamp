@@ -3,5 +3,7 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/EncodeLib"/>
+	<classpathentry kind="lib" path="lib/commons-compress-1.12-javadoc.jar"/>
+	<classpathentry kind="lib" path="lib/junrar-0.8.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
