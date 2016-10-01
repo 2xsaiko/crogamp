@@ -106,7 +106,7 @@ public class GameLibrary {
 		reg.registerCommand("ml", "Lists all mods for the currently active game.", "[pattern]", GameLibrary::listMods);
 		reg.registerCommand("mm", "Moves the specified mod to the specified position in the priority list.",
 				"<id> <position>", GameLibrary::moveMod);
-		reg.registerCommand("me", "Toggles if the selected mod is active.", "<id>", in -> -10);
+		reg.registerCommand("me", "Toggles if the selected mod is active.", "<id>", GameLibrary::toggleMod);
 		reg.registerCommand("md", "Deletes the specified mod and removes all associated files.", "<id>", in -> -10);
 	}
 
@@ -244,6 +244,29 @@ public class GameLibrary {
 			tm.forEach(settings -> settings.setValue(ModSettings.PRIO, settings.getValue(ModSettings.PRIO) - dir));
 			ms.setValue(ModSettings.PRIO, newprio);
 			currentGame.rebuildPriorities();
+			b();
+			return 0;
+		} else {
+			return -2;
+		}
+	}
+	
+	private static int toggleMod(String[] args) {
+		if (a() && args.length == 1) {
+			String modid = args[0];
+			if (!currentGame.getValue(GameSettings.MODS).containsKey(modid)) {
+				System.out.printf("Mod %s not registered.%n", modid);
+				return -3;
+			}
+			ModSettings ms = currentGame.getValue(GameSettings.MODS).get(modid);
+			if (ms.getValue(ModSettings.BASEGAME)) {
+				System.out.println("Cannot disable the base game files!");
+				return -4;
+			}
+			boolean flag;
+			ms.setValue(ModSettings.ENABLED, flag = !ms.getValue(ModSettings.ENABLED));
+			System.out.printf("%s is now %s.%n", modid, flag ? "enabled" : "disabled");
+			b();
 			return 0;
 		} else {
 			return -2;
@@ -315,6 +338,7 @@ public class GameLibrary {
 			// 2. Link files, sorted by priority
 			ArrayList<ModSettings> mods = new ArrayList<>();
 			currentGame.getValue(GameSettings.MODS).forEach((id, ms) -> mods.add(ms));
+			mods.removeIf(m -> !m.getValue(ModSettings.ENABLED));
 			mods.sort((o1, o2) -> o1.getValue(ModSettings.PRIO) > o2.getValue(ModSettings.PRIO) ? 1 : -1);
 			mods.forEach(m -> m.getValue(ModSettings.DIRS).forEach(d -> new File(dir, d).mkdirs()));
 			mods.forEach(m -> m.getValue(ModSettings.FILES).forEach((f, sha) -> {
