@@ -17,8 +17,6 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import javax.xml.bind.annotation.adapters.HexBinaryAdapter;
-
 import com.github.mrebhan.crogamp.cli.CommandRegistry;
 import com.github.mrebhan.crogamp.cli.TableList;
 import com.github.mrebhan.crogamp.settings.Settings;
@@ -129,7 +127,7 @@ public class GameLibrary {
 	private static int listMods(String[] args) {
 		if (a()) {
 			TableList tl = new TableList(3, "Position", "Mod ID", "Enabled").sortBy(0)
-					.withUnicode(settings.getValue(Settings.UNICODE));
+					.withUnicode(settings.getValue(Settings.UNICODE)).setNumberRow(0);
 			currentGame.getValue(GameSettings.MODS)
 					.forEach((name, ms) -> tl.addRow(Integer.toString(ms.getValue(ModSettings.PRIO)), name,
 							ms.getValue(ModSettings.ENABLED) ? "Yes" : "No"));
@@ -390,16 +388,18 @@ public class GameLibrary {
 			mods.removeIf(m -> !m.getValue(ModSettings.ENABLED));
 			mods.sort((o1, o2) -> o1.getValue(ModSettings.PRIO) > o2.getValue(ModSettings.PRIO) ? 1 : -1);
 			mods.forEach(m -> m.getValue(ModSettings.DIRS).forEach(d -> new File(dir, d).mkdirs()));
-			mods.forEach(m -> m.getValue(ModSettings.FILES).forEach((f, sha) -> {
-				System.out.println(" > " + f);
-				try {
-					File file = new File(dir, f);
-					Files.deleteIfExists(file.toPath());
-					Files.createLink(file.toPath(), currentGame.resource(sha).toPath());
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}));
+			mods.forEach(m -> {
+				System.out.printf(" > %s%n", m.getValue(ModSettings.ID));
+				m.getValue(ModSettings.FILES).forEach((f, sha) -> {
+					try {
+						File file = new File(dir, f);
+						Files.deleteIfExists(file.toPath());
+						Files.createLink(file.toPath(), currentGame.resource(sha).toPath());
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				});
+			});
 
 			return 0;
 		} else {

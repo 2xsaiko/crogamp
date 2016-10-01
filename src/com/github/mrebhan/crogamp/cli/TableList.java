@@ -27,6 +27,7 @@ public class TableList {
 	private int findex;
 	private String filter;
 	private boolean ucode;
+	private boolean[] numprop;
 
 	public TableList(int rows, String... descriptions) {
 		if (descriptions.length != rows) {
@@ -40,6 +41,7 @@ public class TableList {
 		this.tableSizes = new int[rows];
 		this.updateSizes(descriptions);
 		this.ucode = false;
+		this.numprop = new boolean[rows];
 	}
 
 	private void updateSizes(String[] elements) {
@@ -78,6 +80,11 @@ public class TableList {
 	public TableList filterBy(int par0, String pattern) {
 		this.findex = par0;
 		this.filter = pattern;
+		return this;
+	}
+
+	public TableList setNumberRow(int row) {
+		numprop[row] = true;
 		return this;
 	}
 
@@ -179,7 +186,11 @@ public class TableList {
 		});
 
 		if (sortBy > -1) {
-			localTable.sort((o1, o2) -> o1[sortBy].compareTo(o2[sortBy]));
+			if (numprop[sortBy]) {
+				localTable.sort((o1, o2) -> Integer.parseInt(o1[sortBy]) - Integer.parseInt(o2[sortBy]));
+			} else {
+				localTable.sort((o1, o2) -> o1[sortBy].compareTo(o2[sortBy]));
+			}
 		}
 
 		for (String[] strings : localTable) {
@@ -195,12 +206,19 @@ public class TableList {
 						line.append(" ");
 					}
 				}
-				String part = strings[i];
-				if (part == null) {
+				String part = "";
+				if (strings[i] == null) {
 					part = "";
-				}
-				while (part.length() < tableSizes[i]) {
-					part += " ";
+				} else if (!numprop[i]) {
+					part += strings[i];
+					while (part.length() < tableSizes[i]) {
+						part += " ";
+					}
+				} else if (numprop[i]) {
+					for (int j = 0; j < tableSizes[i] - strings[i].length(); j++) {
+						part += " ";
+					}
+					part += strings[i];
 				}
 				line.append(part);
 			}
