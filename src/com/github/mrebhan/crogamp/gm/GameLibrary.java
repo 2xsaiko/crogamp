@@ -231,9 +231,8 @@ public class GameLibrary {
 			}
 			ModSettings ms = modList.get(modid);
 			int curprio = ms.getValue(ModSettings.PRIO);
-			int dir = (int) Math.signum(newprio - curprio); // -1 for up, 0 for
-															// no action, 1 for
-															// down
+			// -1 for up, 0 for no action, 1 for down
+			int dir = (int) Math.signum(newprio - curprio);
 			if (dir == 0) {
 				return 0;
 			}
@@ -393,7 +392,10 @@ public class GameLibrary {
 				m.getValue(ModSettings.FILES).forEach((f, sha) -> {
 					try {
 						File file = new File(dir, f);
-						Files.deleteIfExists(file.toPath());
+						if (file.exists()) {
+							System.out.printf("Overwriting %s!%n", f);
+							Files.deleteIfExists(file.toPath());
+						}
 						Files.createLink(file.toPath(), currentGame.resource(sha).toPath());
 					} catch (IOException e) {
 						e.printStackTrace();
