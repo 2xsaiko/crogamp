@@ -327,6 +327,7 @@ public class GameLibrary {
 				}
 			});
 			modList.remove(modid);
+			currentGame.rebuildPriorities();
 			b();
 			return 0;
 		} else {
