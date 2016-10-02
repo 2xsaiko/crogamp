@@ -16,4 +16,4 @@ TODO:
  - GUI
  - Scripting language support (NMM, others, maybe even a custom one?)
  - Pull files directly from the Internet (with scripts)
- - Other compression formats (tar{.gz|.xz.bz2}, .rar, .7z)
+ - Other compression formats (tar[.gz|.xz|.bz2], .rar, .7z)
