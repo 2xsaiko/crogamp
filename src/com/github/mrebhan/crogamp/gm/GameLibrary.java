@@ -14,6 +14,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -101,12 +103,13 @@ public class GameLibrary {
 		reg.registerCommand("ga", "Adds the specified game.", "<id> <description> <path>", GameLibrary::addGame);
 		reg.registerCommand("gl", "Lists all currently added games", "[pattern]", GameLibrary::listGames);
 		reg.registerCommand("gs", "Selects the specified game.", "<id>", GameLibrary::selectGame);
-		reg.registerCommand("gr", "Rebuilds the files of the currently active game.", "[base-only]", GameLibrary::rebuildGameFiles);
+		reg.registerCommand("gr", "Rebuilds the files of the currently active game.", "[base-only]",
+				GameLibrary::rebuildGameFiles);
 		reg.registerCommand("ma", "Adds a mod to the currently active game.", "<id> <file>", GameLibrary::addMod);
-		reg.registerCommand("ml", "Lists all mods for the currently active game.", GameLibrary::listMods);
+		reg.registerCommand("ml", "Lists all mods for the currently active game.", "[pattern]", GameLibrary::listMods);
 		reg.registerCommand("mm", "Moves the specified mod to the specified position in the priority list.",
 				"<id> <position>", GameLibrary::moveMod);
-		reg.registerCommand("me", "Toggles if the selected mod is active.", "<id>", GameLibrary::toggleMod);
+		reg.registerCommand("mt", "Toggles if the selected mod(s) are active.", "<pattern>...", GameLibrary::toggleMod);
 		reg.registerCommand("md", "Deletes the specified mod and removes all associated files.", "<id>",
 				GameLibrary::deleteMod);
 	}
@@ -128,6 +131,10 @@ public class GameLibrary {
 		if (a()) {
 			TableList tl = new TableList(3, "Position", "Mod ID", "Enabled").sortBy(0)
 					.withUnicode(settings.getValue(Settings.UNICODE)).setNumberRow(0);
+			if (args.length > 0) {
+				String s = String.join(" ", args).replace("?", ".?").replace("*", ".*?");
+				tl.filterBy(1, s);
+			}
 			currentGame.getValue(GameSettings.MODS)
 					.forEach((name, ms) -> tl.addRow(Integer.toString(ms.getValue(ModSettings.PRIO)), name,
 							ms.getValue(ModSettings.ENABLED) ? "Yes" : "No"));
@@ -254,21 +261,33 @@ public class GameLibrary {
 	}
 
 	private static int toggleMod(String[] args) {
-		if (a() && args.length == 1) {
-			String modid = args[0];
-			Map<String, ModSettings> modList = currentGame.getValue(GameSettings.MODS);
-			if (!modList.containsKey(modid)) {
-				System.out.printf("Mod %s not registered.%n", modid);
-				return -3;
+		if (a() && args.length > 0) {
+			HashSet<ModSettings> mods = new HashSet<>();
+			for (String modid : args) {
+				String s = modid.replace("?", ".?").replace("*", ".*?");
+				Pattern p = Pattern.compile(s);
+				Map<String, ModSettings> modList = currentGame.getValue(GameSettings.MODS);
+				boolean hc = false;
+				for (ModSettings modSettings : modList.values()) {
+					Matcher m = p.matcher(modSettings.getValue(ModSettings.ID));
+					if (m.matches()) {
+						hc = true;
+						mods.add(modSettings);
+					}
+				}
+				if (!hc) {
+					System.out.printf("Mod %s not registered.%n", modid);
+				}
 			}
-			ModSettings ms = modList.get(modid);
-			if (ms.getValue(ModSettings.BASEGAME)) {
-				System.out.println("Cannot disable the base game files!");
-				return -4;
-			}
-			boolean flag;
-			ms.setValue(ModSettings.ENABLED, flag = !ms.getValue(ModSettings.ENABLED));
-			System.out.printf("%s is now %s.%n", modid, flag ? "enabled" : "disabled");
+			mods.forEach(ms -> {
+				if (ms.getValue(ModSettings.BASEGAME)) {
+					System.out.println("Cannot disable the base game files!");
+					return;
+				}
+				boolean flag;
+				ms.setValue(ModSettings.ENABLED, flag = !ms.getValue(ModSettings.ENABLED));
+				System.out.printf("%s is now %s.%n", ms.getValue(ModSettings.ID), flag ? "enabled" : "disabled");
+			});
 			b();
 			return 0;
 		} else {
@@ -369,7 +388,7 @@ public class GameLibrary {
 	private static int rebuildGameFiles(String[] args) {
 		if (a()) {
 			boolean baseonly = args.length == 1 && "base-only".equals(args[0]);
-			
+
 			// 1. Remove files
 			HashSet<File> s = new HashSet<>();
 			File dir = new File(currentGame.getValue(GameSettings.PATH));
