@@ -1,0 +1,108 @@
+#!/bin/bash
+# Created by marco, So 20. Sep 12:59:31 CEST 2015.
+
+#Default conf.int values
+INT_SHELL=/bin/bash
+INT_OUT=a.out
+INT_INCLUDE=include
+INT_SCRIPT=run.sh
+INT_PRE=512
+#INT_COMPRESS=1 Not implemented
+INT_UNPACKALL=0
+INT_NOPROGRESS=0
+
+function pre_build {
+  return 0
+}
+
+function post_build {
+  return 0
+}
+
+function die {
+  echo "$@" 1>&2
+  exit 1
+}
+
+SHA1SUM="$(sha1sum $0 | cut -c-7)"
+CDIR="$PWD"
+CONFIG_FILE="$CDIR/conf.int"
+BUILD_DIR="$CDIR/build"
+printf "\n"
+printf "INTpack version %s\n" "$SHA1SUM"
+printf "\n"
+if [ -f "$CONFIG_FILE" ]; then
+  ERROR=0
+  printf "Loading configuration file...\n"
+  source "$CONFIG_FILE"
+  if [ "$ERROR" -ne 0 ]; then
+    printf "Error(s) occurred while loading configuration file. Aborting.\n"
+    exit 2
+  fi
+else
+  printf "Error: configuration file not found (%s). Aborting.\n" "$CONFIG_FILE"
+  exit 1
+fi
+
+if [ ! -d "$CDIR/$INT_INCLUDE" ]; then
+  printf "Include directory (%s) does not exist! Aborting." "$INT_INCLUDE"
+  exit -1
+fi
+
+if [ ! -f "$CDIR/$INT_SCRIPT" ]; then
+  printf "Launch file (%s) does not exist! Aborting." "$INT_SCRIPT"
+  exit -1
+fi
+
+cd "$CDIR"
+test -e "$BUILD_DIR" && rm -r "$BUILD_DIR"
+mkdir "$BUILD_DIR"
+printf "Building...\n"
+pre_build "$CDIR" "$BUILD_DIR" || die "An error occurred while running pre_build hook"
+cd $BUILD_DIR
+touch "$BUILD_DIR/$INT_OUT"
+printf "#!$INT_SHELL\n" >> "$BUILD_DIR/$INT_OUT"
+printf "# Please do not modify this file or the offsets will break.\n" >> "$BUILD_DIR/$INT_OUT"
+printf "\n" >> "$BUILD_DIR/$INT_OUT"
+printf "_RUN_FILE="'"$(readlink -f $0)"'"\n" >> "$BUILD_DIR/$INT_OUT"
+sp_begin="$(cat "$BUILD_DIR/$INT_OUT" | wc -c)"
+sp_text=""
+exall_text=""
+all_text=""
+for i in $(seq $INT_PRE); do
+  printf "#" >>"$BUILD_DIR/$INT_OUT" 
+done
+printf "\n" >> "$BUILD_DIR/$INT_OUT"
+if [ "$INT_NOPROGRESS" -eq 0 ]; then
+  printf "which pv > /dev/null 2> /dev/null || printf \"Install pv for file copy progress bar.\\n\"\n" >> "$BUILD_DIR/$INT_OUT"
+fi
+cat "$CDIR/$INT_SCRIPT" >> "$BUILD_DIR/$INT_OUT"
+#Prevent it from trying to exec binary data
+printf "exit\n" >> "$BUILD_DIR/$INT_OUT"
+exall_text="function unpackall {\n"
+for file in $CDIR/$INT_INCLUDE/*; do
+  if [ -f "$file" ]; then
+    echo "$file"
+    off="$(cat "$BUILD_DIR/$INT_OUT" | wc -c)"
+    printf "Offset: %s\n" "$off"
+    len="$(cat "$file" | wc -c)"
+    printf "Length: %s\n" "$len"
+    cat "$file" >> "$BUILD_DIR/$INT_OUT"
+    if [ "$INT_NOPROGRESS" -eq 1 ]; then
+      sp_text="$sp_text""function unpack_$(basename "$file" | sed 's/ /_/g' | sed 's/'\''/_/g') {\n   dd if=\"\$_RUN_FILE\" of=\"\$1\" status=none iflag=count_bytes,skip_bytes bs=4096 skip=$off count=$len\n}\n\n"
+    else 
+      sp_text="$sp_text""function unpack_$(basename "$file" | sed 's/ /_/g' | sed 's/'\''/_/g') {\n   which pv > /dev/null 2> /dev/null && dd if=\"\$_RUN_FILE\" iflag=count_bytes,skip_bytes bs=4096 skip=$off count=$len status=none | pv --size $len | dd of=\"\$1\" status=none || dd if=\"\$_RUN_FILE\" of=\"\$1\" status=none iflag=count_bytes,skip_bytes bs=4096 skip=$off count=$len\n}\n\n"
+    fi
+    exall_text="$exall_text""printf \"Extracting %s\\n\" \"$(basename "$file")\"; unpack_$(basename "$file" | sed 's/ /_/g' | sed 's/'\''/_/g') \"$(basename "$file")\"\n"
+  fi
+done
+exall_text="$exall_text}"
+all_text="$sp_text\n$exall_text"
+sp_linec="$(echo -e $all_text | wc -c)"
+if [ "$sp_linec" -gt "$INT_PRE" ]; then
+  printf "Error: include line (%s) is larger than reserved space (%s). Please increase INT_PRE value in conf.int.\n" "$sp_linec" "$INT_PRE"
+  exit 3
+fi
+echo -e $all_text | dd of="$BUILD_DIR/$INT_OUT" bs=1 conv=notrunc seek=$sp_begin
+chmod +x "$BUILD_DIR/$INT_OUT"
+post_build "$CDIR" "$BUILD_DIR"
