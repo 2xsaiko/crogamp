@@ -4,6 +4,7 @@ import de.marco_rebhan.encodelib.IOStream;
 
 public class PropertyByteArray extends Property<byte[]> {
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public void serialize(IOStream stream, byte[] t) {
 		stream.putInt(t.length);

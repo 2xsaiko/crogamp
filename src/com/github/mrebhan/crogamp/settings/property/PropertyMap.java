@@ -55,6 +55,7 @@ public abstract class PropertyMap<V> extends Property<Map<String, V>> {
 	public static Property<Map<String, byte[]>> createPropertyByteArray(String name) {
 		return new PropertyMap<byte[]>() {
 
+			@SuppressWarnings("deprecation")
 			@Override
 			public void serializePart(IOStream stream, String s, byte[] v) {
 				stream.putString(s);

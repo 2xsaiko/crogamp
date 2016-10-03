@@ -25,6 +25,7 @@ import com.github.mrebhan.crogamp.settings.Settings;
 
 import de.marco_rebhan.encodelib.IOStream;
 
+@SuppressWarnings("deprecation")
 public class GameLibrary {
 
 	private static Settings settings;
@@ -314,8 +315,6 @@ public class GameLibrary {
 					if (mod == ms)
 						continue;
 					for (byte[] fm : mod.getValue(ModSettings.FILES).values()) {
-						// System.out.println(new HexBinaryAdapter().marshal(fm)
-						// + " = " + new HexBinaryAdapter().marshal(sha1));
 						if (Arrays.equals(fm, sha1)) {
 							isUsed = true;
 							break outerLoop;
