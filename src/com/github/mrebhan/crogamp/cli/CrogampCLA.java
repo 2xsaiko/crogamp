@@ -14,9 +14,8 @@ public class CrogampCLA extends CrogampCLI {
 		int j;
 		Stack<String> stack = new Stack<>();
 		while ((j = clString.indexOf('+')) > 0) {
-			String cl = new StringBuffer(clString.substring(0, j)).reverse().toString();
+			stack.push(new StringBuffer(clString.substring(0, j)).reverse().toString());
 			clString = clString.substring(j + 1).trim();
-			stack.push(cl);
 		}
 		while (!stack.isEmpty() && isRunning() && i == 0) {
 			String cl = stack.pop();
