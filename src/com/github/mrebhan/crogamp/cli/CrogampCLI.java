@@ -49,15 +49,6 @@ public class CrogampCLI implements ICrogampInterface {
 	private void registerCommands() {
 		reg.registerCommand("license", "Displays licensing info.", this::cmdLicense);
 		reg.registerCommand("bye", "Quits the application.", this::cmdExit);
-		reg.registerCommand("top kek", "Test command. Do not use, may cause death and/or destruction", s -> {
-			for (int i = 0; i < 10; i++) {
-				for (int j = 0; j < 40; j++) {
-					System.out.print("LO");
-				}
-				System.out.println("L");
-			}
-			return 0x50;
-		});
 		GameLibrary.registerCommands(reg);
 		GameLibrary.getSettings().registerCommands(reg);
 	}
