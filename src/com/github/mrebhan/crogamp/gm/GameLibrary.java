@@ -130,8 +130,9 @@ public class GameLibrary {
 
 	private static int listMods(String[] args) {
 		if (a()) {
-			TableList tl = new TableList(3, "Position", "Mod ID", "Enabled").sortBy(0)
-					.withUnicode(settings.getValue(Settings.UNICODE)).setNumberRow(0);
+			TableList tl = new TableList(3, "Position", "Mod ID", "Enabled")
+					.withUnicode(settings.getValue(Settings.UNICODE))
+					.compareWith((o1, o2) -> Integer.parseInt(o1[0]) - Integer.parseInt(o2[0]));
 			if (args.length > 0) {
 				String s = String.join(" ", args).replace("?", ".?").replace("*", ".*?");
 				tl.filterBy(1, s);
