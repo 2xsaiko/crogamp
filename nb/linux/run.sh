@@ -2,5 +2,5 @@ which java > /dev/null 2> /dev/null || ( printf "Please install the Java Runtime
 cd "$(dirname $0)"
 test -f .crogamp.jar && rm .crogamp.jar
 unpack_crogamp.jar .crogamp.jar
-java -jar .crogamp.jar
+java -jar .crogamp.jar $@
 rm .crogamp.jar

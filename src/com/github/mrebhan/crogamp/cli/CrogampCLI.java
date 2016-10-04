@@ -11,7 +11,7 @@ import com.github.mrebhan.crogamp.gm.GameSettings;
 
 public class CrogampCLI implements ICrogampInterface {
 
-	private CommandRegistry reg;
+	protected final CommandRegistry reg;
 	private boolean running;
 
 	public CrogampCLI() {
@@ -81,6 +81,10 @@ public class CrogampCLI implements ICrogampInterface {
 		GameLibrary.getSettings().saveSettings();
 		System.out.println("Goodbye!");
 		return 0;
+	}
+
+	public boolean isRunning() {
+		return running;
 	}
 
 }
