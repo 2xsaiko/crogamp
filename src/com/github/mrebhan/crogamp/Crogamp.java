@@ -2,7 +2,6 @@ package com.github.mrebhan.crogamp;
 
 import com.github.mrebhan.crogamp.cli.CrogampCLA;
 import com.github.mrebhan.crogamp.cli.CrogampCLI;
-import com.github.mrebhan.crogamp.cli.TableList;
 
 public class Crogamp {
 
