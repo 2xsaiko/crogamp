@@ -36,6 +36,7 @@ public class CrogampCLA extends CrogampCLI {
 			return i;
 		}
 		if (isRunning()) {
+			System.out.println();
 			return super.start(args);
 		}
 		return 0;
