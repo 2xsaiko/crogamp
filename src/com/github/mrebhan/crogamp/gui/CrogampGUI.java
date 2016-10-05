@@ -10,6 +10,7 @@ import com.github.mrebhan.crogamp.settings.Settings;
 import javafx.application.Application;
 import javafx.beans.property.ObjectProperty;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -55,6 +56,7 @@ public class CrogampGUI extends Application implements ICrogampInterface {
 		scene.setFill(Paint.valueOf("#292929"));
 		stage.setScene(scene);
 		stage.show();
+		stage.setOnCloseRequest(e -> GameLibrary.getSettings().saveSettings());
 	}
 
 	private void initElements() {
@@ -72,6 +74,7 @@ public class CrogampGUI extends Application implements ICrogampInterface {
 		rebuildGame = new Button("Rebuild Game");
 		rebuildGame.setStyle("-fx-base: #363636;");
 		rebuildGame.setDisable(GameLibrary.getSelectedGame() == null);
+		rebuildGame.setOnAction(e -> rebuildGame());
 
 		modTable = new TableView<>();
 		modTable.setStyle("-fx-base: #363636;");
@@ -97,6 +100,20 @@ public class CrogampGUI extends Application implements ICrogampInterface {
 		TableColumn<ModSettings, Boolean> enabledCol = new TableColumn<>("Enabled");
 
 		modTable.getColumns().setAll(prioCol, idCol, enabledCol);
+	}
+
+	private void rebuildGame() {
+		// rebuildGame.setDisable(true);
+		// Task<Void> t = new Task<Void>() {
+		//
+		// @Override
+		// protected Void call() throws Exception {
+		// return null;
+		// }
+		// };
+		// t.setOnSucceeded(e -> rebuildGame.setDisable(false));
+		// t.setOnFailed(e -> rebuildGame.setDisable(false));
+		// t.setOnCancelled(e -> rebuildGame.setDisable(false));
 	}
 
 	@Override

@@ -20,6 +20,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import com.github.mrebhan.crogamp.IProgressTracker;
+import com.github.mrebhan.crogamp.ProgressTrackerExt;
 import com.github.mrebhan.crogamp.cli.CommandRegistry;
 import com.github.mrebhan.crogamp.cli.TableList;
 import com.github.mrebhan.crogamp.settings.Settings;
@@ -33,7 +34,7 @@ public class GameLibrary {
 
 	private static GameSettings currentGame;
 
-	private static boolean indexFiles() {
+	private static boolean indexFiles(IProgressTracker tracker) {
 		File dir = new File(currentGame.getValue(GameSettings.PATH));
 		File db = new File(dir, ".crogamp");
 
@@ -47,7 +48,7 @@ public class GameLibrary {
 			Set<File> files = new HashSet<>();
 			Set<File> dirs = new HashSet<>();
 			recursiveList(dir, db, files, dirs);
-			System.out.printf("%s files, %s directories%nIndexing...%n", files.size(), dirs.size());
+			tracker.update(10, 0, 0, true, files.size() + "", dirs.size() + "");
 			dirs.forEach(f -> ms.getValue(ModSettings.DIRS).add('/' + dir.toURI().relativize(f.toURI()).getPath()));
 
 			for (File file : files) {
@@ -63,12 +64,10 @@ public class GameLibrary {
 					Files.createLink(file.toPath(), targetRes.toPath());
 					ms.getValue(ModSettings.FILES).put(p, sha1);
 				} catch (NoSuchAlgorithmException e) {
-					e.printStackTrace();
-					System.out.println("System does not support SHA-1 hashing algorithm. Aborting");
-					return false;
+					throw new RuntimeException(e);
 				} catch (IOException e) {
+					tracker.update(-10, 0, 0, true, file.toString());
 					e.printStackTrace();
-					System.out.println("Couldn't open file. Aborting");
 					return false;
 				}
 			}
@@ -171,15 +170,27 @@ public class GameLibrary {
 			String desc = args[1];
 			String path = args[2];
 			File f = new File(path);
-			int ret = addGame(id, desc, f);
-			switch (ret) {
-			case 1:
-				System.err.printf("Another game with id %s already exists!%n", id);
-				return -3;
-			case 2:
-				System.err.printf("Game directory %s does not exist! Aborting.", path);
-				return -4;
 
+			ProgressTrackerExt pt = new ProgressTrackerExt((i, d1, d2, ne, strs) -> {
+				switch (i) {
+				case -1:
+					System.err.printf("Another game with id %s already exists!%n", strs);
+					break;
+				case -2:
+					System.err.printf("Game directory %s does not exist! Aborting.", strs);
+					break;
+				case 10:
+					System.out.printf("%s files, %s directories%nIndexing...%n", strs);
+					break;
+				case -10:
+					System.err.printf("Couldn't access file %s! Aborting.%n", strs);
+					break;
+				}
+			});
+
+			addGame(id, desc, f, pt);
+			if (pt.lastType() < 0) {
+				return pt.lastType() - 2;
 			}
 
 			return 0;
@@ -187,12 +198,14 @@ public class GameLibrary {
 		return -2;
 	}
 
-	public static int addGame(String id, String desc, File root) {
+	public static void addGame(String id, String desc, File root, IProgressTracker tracker) {
 		if (settings.getValue(Settings.GAMES).containsKey(id)) {
-			return 1;
+			tracker.update(-1, 0, 0, true, id);
+			return;
 		}
 		if (!root.isDirectory()) {
-			return 2;
+			tracker.update(-2, 0, 0, true, root.toString());
+			return;
 		}
 		GameSettings gs = new GameSettings();
 		gs.setValue(GameSettings.ID, id);
@@ -200,44 +213,62 @@ public class GameLibrary {
 		gs.setValue(GameSettings.PATH, root.toString());
 		settings.getValue(Settings.GAMES).put(id, gs);
 		currentGame = gs;
-		if (!indexFiles()) {
+		if (!indexFiles(tracker)) {
 			currentGame = null;
 			settings.getValue(Settings.GAMES).remove(id);
-			return 2;
 		}
-
-		return 0;
 	}
 
 	private static int addMod(String[] args) {
 		if (a() && args.length == 2) {
 			String id = args[0];
 			String path = args[1];
-			Map<String, ModSettings> modList = currentGame.getValue(GameSettings.MODS);
-			if (modList.containsKey(id)) {
-				System.err.printf("Another mod with id %s already exists!%nRemove it first if this is an update!%n",
-						id);
-				return -3;
-			}
-			ModSettings ms = new ModSettings();
-			ms.setValue(ModSettings.ID, id);
-			ms.setValue(ModSettings.PRIO, 2147483647);
-			ms.setValue(ModSettings.ENABLED, true);
 			File file = new File(path);
-			if (!file.isFile()) {
-				System.err.printf("File %s could not be found.%n", path);
-				return -4;
+
+			ProgressTrackerExt pt = new ProgressTrackerExt((i, d1, d2, ne, strs) -> {
+				switch (i) {
+				case -1:
+					System.out.printf("Another mod with id %s already exists!%nRemove it first if this is an update!%n",
+							strs);
+					break;
+				case -2:
+					System.out.printf("File %s could not be found.%n", strs);
+					break;
+				case 12:
+					System.out.printf("%s files, %s directories%n", strs);
+					break;
+				}
+			});
+
+			addMod(id, file, pt);
+			if (pt.lastType() < 0) {
+				return pt.lastType() - 2;
 			}
-			boolean success = tryZip(ms, file);
-			if (success) {
-				modList.put(id, ms);
-				currentGame.rebuildPriorities();
-				b();
-				return 0;
-			}
-			return -4;
+			return 0;
 		} else {
 			return -2;
+		}
+	}
+
+	public static void addMod(String id, File f, IProgressTracker tracker) {
+		Map<String, ModSettings> modList = currentGame.getValue(GameSettings.MODS);
+		if (modList.containsKey(id)) {
+			tracker.update(-1, 0, 0, true, id);
+			return;
+		}
+		ModSettings ms = new ModSettings();
+		ms.setValue(ModSettings.ID, id);
+		ms.setValue(ModSettings.PRIO, 2147483647);
+		ms.setValue(ModSettings.ENABLED, true);
+		if (!f.isFile()) {
+			tracker.update(-2, 0, 0, true, f);
+			return;
+		}
+		boolean success = tryZip(ms, f, tracker);
+		if (success) {
+			modList.put(id, ms);
+			currentGame.rebuildPriorities();
+			b();
 		}
 	}
 
@@ -354,12 +385,14 @@ public class GameLibrary {
 		}
 	}
 
-	private static boolean tryZip(ModSettings ms, File file) {
+	private static boolean tryZip(ModSettings ms, File file, IProgressTracker tracker) {
 		try (ZipInputStream is = new ZipInputStream(new FileInputStream(file))) {
 			ZipEntry ze;
 			int f = 0;
 			int d = 0;
+			tracker.update(10, 0, 0, true);
 			while ((ze = is.getNextEntry()) != null) {
+				tracker.update(11, 0, 0, false, '/' + ze.getName());
 				if (ze.isDirectory() || ze.getSize() == 0) {
 					ms.getValue(ModSettings.DIRS).add(ze.getName());
 					d++;
@@ -393,7 +426,7 @@ public class GameLibrary {
 					f++;
 				}
 			}
-			System.out.printf("%s files, %s directories%n", f, d);
+			tracker.update(12, 0, 0, true, f, d);
 			return true;
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
