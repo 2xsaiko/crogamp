@@ -157,19 +157,13 @@ public class TableList {
 				line = new StringBuilder();
 				if (ucode) {
 					line.append(CROSSING_L);
-					for (int j = 0; j < spacing; j++) {
-						line.append(gc(BLINE));
-					}
 				}
 			}
-			for (int j = 0; j < tableSizes[i] + spacing; j++) {
+			for (int j = 0; j < tableSizes[i] + 2 * spacing; j++) {
 				line.append(gc(BLINE));
 			}
 		}
 		if (ucode) {
-			for (int j = 0; j < spacing; j++) {
-				line.append(gc(BLINE));
-			}
 			line.append(CROSSING_R);
 		}
 		System.out.println(line.toString());
