@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import com.github.mrebhan.crogamp.IProgressTracker;
 import com.github.mrebhan.crogamp.cli.CommandRegistry;
 import com.github.mrebhan.crogamp.cli.TableList;
 import com.github.mrebhan.crogamp.settings.Settings;
@@ -154,10 +155,14 @@ public class GameLibrary {
 				System.err.printf("Game %s not registered!", args[0]);
 				return -3;
 			}
-			currentGame = gs;
+			selectGame(gs);
 			return 0;
 		}
 		return -2;
+	}
+
+	public static void selectGame(GameSettings gs) {
+		currentGame = gs;
 	}
 
 	private static int addGame(String[] args) {
@@ -165,29 +170,43 @@ public class GameLibrary {
 			String id = args[0];
 			String desc = args[1];
 			String path = args[2];
-			if (settings.getValue(Settings.GAMES).containsKey(id)) {
+			File f = new File(path);
+			int ret = addGame(id, desc, f);
+			switch (ret) {
+			case 1:
 				System.err.printf("Another game with id %s already exists!%n", id);
 				return -3;
-			}
-			File f = new File(path);
-			if (!f.isDirectory()) {
+			case 2:
 				System.err.printf("Game directory %s does not exist! Aborting.", path);
 				return -4;
+
 			}
-			GameSettings gs = new GameSettings();
-			gs.setValue(GameSettings.ID, id);
-			gs.setValue(GameSettings.FULL_NAME, desc);
-			gs.setValue(GameSettings.PATH, path);
-			settings.getValue(Settings.GAMES).put(id, gs);
-			currentGame = gs;
-			if (!indexFiles()) {
-				currentGame = null;
-				settings.getValue(Settings.GAMES).remove(id);
-				return -5;
-			}
+
 			return 0;
 		}
 		return -2;
+	}
+
+	public static int addGame(String id, String desc, File root) {
+		if (settings.getValue(Settings.GAMES).containsKey(id)) {
+			return 1;
+		}
+		if (!root.isDirectory()) {
+			return 2;
+		}
+		GameSettings gs = new GameSettings();
+		gs.setValue(GameSettings.ID, id);
+		gs.setValue(GameSettings.FULL_NAME, desc);
+		gs.setValue(GameSettings.PATH, root.toString());
+		settings.getValue(Settings.GAMES).put(id, gs);
+		currentGame = gs;
+		if (!indexFiles()) {
+			currentGame = null;
+			settings.getValue(Settings.GAMES).remove(id);
+			return 2;
+		}
+
+		return 0;
 	}
 
 	private static int addMod(String[] args) {
@@ -390,45 +409,61 @@ public class GameLibrary {
 		if (a()) {
 			boolean baseonly = args.length == 1 && "base-only".equals(args[0]);
 
-			// 1. Remove files
-			HashSet<File> s = new HashSet<>();
-			File dir = new File(currentGame.getValue(GameSettings.PATH));
-			currentGame.getValue(GameSettings.MODS)
-					.forEach((id, ms) -> ms.getValue(ModSettings.FILES).forEach((fs, sha) -> s.add(new File(dir, fs))));
-			s.forEach(f -> {
-				try {
-					Files.deleteIfExists(f.toPath());
-				} catch (IOException e) {
-					System.out.printf("Couldn't delete file %s%n", f);
+			rebuildGameFiles(baseonly, (i, p, f, n, arr) -> {
+				switch (i) {
+				case -2:
+					System.out.printf("Overwriting %s!%n", arr[0]);
+					break;
+				case -1:
+					System.out.printf("Couldn't delete file %s%n", arr[0]);
+					break;
+				case 0:
+					System.out.printf(" > %s%n", arr[0]);
+					break;
 				}
-			});
-
-			// 2. Link files, sorted by priority
-			ArrayList<ModSettings> mods = new ArrayList<>();
-			currentGame.getValue(GameSettings.MODS).forEach((id, ms) -> mods.add(ms));
-			mods.removeIf(m -> !m.getValue(ModSettings.ENABLED) || (baseonly && !m.getValue(ModSettings.BASEGAME)));
-			mods.sort((o1, o2) -> o1.getValue(ModSettings.PRIO) > o2.getValue(ModSettings.PRIO) ? 1 : -1);
-			mods.forEach(m -> m.getValue(ModSettings.DIRS).forEach(d -> new File(dir, d).mkdirs()));
-			mods.forEach(m -> {
-				System.out.printf(" > %s%n", m.getValue(ModSettings.ID));
-				m.getValue(ModSettings.FILES).forEach((f, sha) -> {
-					try {
-						File file = new File(dir, f);
-						if (file.exists()) {
-							System.out.printf("Overwriting %s!%n", f);
-							Files.deleteIfExists(file.toPath());
-						}
-						Files.createLink(file.toPath(), currentGame.resource(sha).toPath());
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				});
 			});
 
 			return 0;
 		} else {
 			return -1;
 		}
+	}
+
+	public static void rebuildGameFiles(boolean baseOnly, IProgressTracker tracker) {
+		// 1. Remove files
+		HashSet<File> s = new HashSet<>();
+		File dir = new File(currentGame.getValue(GameSettings.PATH));
+		currentGame.getValue(GameSettings.MODS)
+				.forEach((id, ms) -> ms.getValue(ModSettings.FILES).forEach((fs, sha) -> s.add(new File(dir, fs))));
+		s.forEach(f -> {
+			try {
+				Files.deleteIfExists(f.toPath());
+			} catch (IOException e) {
+				tracker.update(-1, 0, 0, true, f.toString());
+			}
+		});
+
+		// 2. Link files, sorted by priority
+		ArrayList<ModSettings> mods = new ArrayList<>();
+		currentGame.getValue(GameSettings.MODS).forEach((id, ms) -> mods.add(ms));
+		mods.removeIf(m -> !m.getValue(ModSettings.ENABLED) || (baseOnly && !m.getValue(ModSettings.BASEGAME)));
+		mods.sort((o1, o2) -> o1.getValue(ModSettings.PRIO) > o2.getValue(ModSettings.PRIO) ? 1 : -1);
+		mods.forEach(m -> m.getValue(ModSettings.DIRS).forEach(d -> new File(dir, d).mkdirs()));
+		mods.forEach(m -> {
+			tracker.update(0, 0, 0, true, m.getValue(ModSettings.ID));
+			m.getValue(ModSettings.FILES).forEach((f, sha) -> {
+				try {
+					File file = new File(dir, f);
+					if (file.exists()) {
+						tracker.update(-2, 0, 0, true, f);
+						Files.deleteIfExists(file.toPath());
+					}
+					Files.createLink(file.toPath(), currentGame.resource(sha).toPath());
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			});
+		});
 	}
 
 	private static byte[] getSHA1(InputStream is) throws NoSuchAlgorithmException, IOException {

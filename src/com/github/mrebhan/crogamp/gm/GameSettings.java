@@ -40,4 +40,9 @@ public class GameSettings extends PropertyContainer {
 		mods.forEach(ms -> ms.setValue(ModSettings.PRIO, i[0]++));
 	}
 
+	@Override
+	public String toString() {
+		return getValue(FULL_NAME) + " (" + getValue(ID) + ")";
+	}
+
 }
