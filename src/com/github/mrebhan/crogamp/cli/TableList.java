@@ -31,6 +31,10 @@ public class TableList {
 	private int spacing;
 	private EnumAlignment aligns[];
 
+	public TableList(String... descriptions) {
+		this(descriptions.length, descriptions);
+	}
+	
 	public TableList(int columns, String... descriptions) {
 		if (descriptions.length != columns) {
 			throw new IllegalArgumentException();
