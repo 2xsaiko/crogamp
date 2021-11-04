@@ -271,7 +271,7 @@ public class TableList {
 		return src[ucode ? 1 : 0];
 	}
 
-	public static enum EnumAlignment {
+	public enum EnumAlignment {
 		LEFT, CENTER, RIGHT
 	}
 
