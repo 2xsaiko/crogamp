@@ -123,7 +123,7 @@ public class TableList {
 				}
 			}
 			line.append(CORNER_TR);
-			System.out.println(line.toString());
+			System.out.println(line);
 
 			line = null;
 		}
@@ -150,7 +150,7 @@ public class TableList {
 		if (ucode) {
 			line.append(gc(VERTICAL_TSEP));
 		}
-		System.out.println(line.toString());
+		System.out.println(line);
 
 		// print vertical seperator
 		line = null;
@@ -170,7 +170,7 @@ public class TableList {
 		if (ucode) {
 			line.append(CROSSING_R);
 		}
-		System.out.println(line.toString());
+		System.out.println(line);
 
 		line = null;
 		ArrayList<String[]> localTable = table;
@@ -244,7 +244,7 @@ public class TableList {
 			if (ucode) {
 				line.append(gc(VERTICAL_BSEP));
 			}
-			System.out.println(line.toString());
+			System.out.println(line);
 
 			line = null;
 		}
@@ -262,7 +262,7 @@ public class TableList {
 				}
 			}
 			line.append(CORNER_BR);
-			System.out.println(line.toString());
+			System.out.println(line);
 		}
 
 	}
