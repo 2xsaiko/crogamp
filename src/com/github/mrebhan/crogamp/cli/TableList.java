@@ -152,7 +152,7 @@ public class TableList {
 		}
 		System.out.println(line);
 
-		// print vertical seperator
+		// print vertical separator
 		line = null;
 		for (int i = 0; i < rows; i++) {
 			if (line != null) {
